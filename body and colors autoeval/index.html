@@ -1,0 +1,361 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Anglais CE1 - Auto-évaluation</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            touch-action: manipulation;
+            user-select: none;
+            -webkit-tap-highlight-color: transparent;
+            overflow-x: hidden;
+        }
+        .word-card {
+            transition: all 0.2s ease;
+        }
+        .correct {
+            border-color: #22c55e !important;
+            background-color: #f0fdf4 !important;
+            transform: scale(1.02);
+        }
+        .wrong {
+            border-color: #ef4444 !important;
+            background-color: #fef2f2 !important;
+        }
+        .hidden { display: none; }
+
+        /* Effet de transparence maximale */
+        .glass-card {
+            background: rgba(255, 255, 255, 0.12);
+            backdrop-filter: blur(14px);
+            -webkit-backdrop-filter: blur(14px);
+            border: 1px solid rgba(255, 255, 255, 0.4);
+            z-index: 20;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.2);
+        }
+
+        .opaque-text {
+            color: #0f172a !important;
+            font-weight: 800;
+        }
+
+        .floating-item {
+            position: absolute;
+            pointer-events: none;
+            z-index: 5; 
+            animation: float-around linear infinite;
+            opacity: 0.6;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        @keyframes float-around {
+            0% { transform: translate(0, 0) rotate(0deg); }
+            33% { transform: translate(12vw, 15vh) rotate(120deg); }
+            66% { transform: translate(-8vw, 25vh) rotate(240deg); }
+            100% { transform: translate(0, 0) rotate(360deg); }
+        }
+
+        .game-bg {
+            background: linear-gradient(135deg, #eef2ff 0%, #f8fafc 100%);
+        }
+
+        .color-dot {
+            width: 45px;
+            height: 45px;
+            border-radius: 50%;
+            border: 3px solid rgba(255,255,255,0.4);
+        }
+    </style>
+</head>
+<body class="bg-indigo-600 font-sans min-h-screen">
+
+    <!-- Écran d'accueil -->
+    <div id="welcome-screen" class="fixed inset-0 z-50 flex items-center justify-center p-6 text-center overflow-hidden">
+        <!-- Fond animé avec Couleurs ET Corps -->
+        <div id="bg-decor" class="absolute inset-0"></div>
+        
+        <div class="glass-card relative w-full max-w-lg p-10 rounded-[60px]">
+            <div class="inline-block px-5 py-1.5 bg-indigo-700/80 text-white rounded-full text-xs font-black uppercase tracking-[0.2em] mb-4 shadow-lg">
+                Auto-Évaluation
+            </div>
+            
+            <h1 class="text-4xl font-black mb-3 text-indigo-900 leading-tight">Vocabulaire Anglais</h1>
+            <p class="text-lg mb-10 opaque-text">Prêt pour ton auto-évaluation ?<br>Choisis ta catégorie :</p>
+            
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                <button onclick="startGame('colors')" class="bg-white hover:bg-indigo-50 text-indigo-700 font-black py-8 px-6 rounded-[35px] shadow-xl transition-all active:scale-95 flex flex-col items-center gap-3 border-b-8 border-indigo-200 group">
+                    <span class="text-5xl group-hover:scale-110 transition-transform">🎨</span>
+                    <span class="text-xl">Colors</span>
+                </button>
+                <button onclick="startGame('body')" class="bg-white hover:bg-indigo-50 text-indigo-700 font-black py-8 px-6 rounded-[35px] shadow-xl transition-all active:scale-95 flex flex-col items-center gap-3 border-b-8 border-indigo-200 group">
+                    <span class="text-5xl group-hover:scale-110 transition-transform">🦶</span>
+                    <span class="text-xl">Body & Size</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Interface de Jeu -->
+    <div id="game-interface" class="game-bg fixed inset-0 flex flex-col hidden overflow-y-auto">
+        <div class="max-w-4xl mx-auto w-full p-4 flex flex-col min-h-screen">
+            <header class="flex justify-between items-center py-4">
+                <button onclick="showHome()" class="bg-white p-3 rounded-2xl shadow-sm border-b-4 border-slate-200 text-slate-600 hover:text-indigo-600">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor" class="w-6 h-6">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18" />
+                    </svg>
+                </button>
+                <div id="progress-bar" class="flex-grow mx-6 h-4 bg-slate-200 rounded-full overflow-hidden">
+                    <div id="progress-fill" class="h-full bg-indigo-500 transition-all duration-300" style="width: 0%"></div>
+                </div>
+                <div class="bg-white px-4 py-2 rounded-2xl font-bold text-indigo-600 shadow-sm border-b-2">
+                    <span id="current-step">0</span>/<span id="total-steps">0</span>
+                </div>
+            </header>
+
+            <div class="flex flex-col items-center justify-center flex-grow py-8">
+                <button id="audio-btn" class="w-28 h-28 bg-indigo-600 rounded-full shadow-2xl flex items-center justify-center text-white mb-12 hover:scale-105 active:scale-90 transition-all border-4 border-white">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-14 h-14">
+                        <path d="M13.5 4.06c0-1.336-1.616-2.005-2.56-1.06l-4.5 4.5H4.508c-1.141 0-2.018.83-2.145 1.906l-.156 1.356c-.053.464-.053.934 0 1.398l.156 1.356c.127 1.076 1.004 1.906 2.145 1.906h1.932l4.5 4.5c.944.945 2.56.276 2.56-1.06V4.06zM18.54 5.44a.75.75 0 011.06 0 9.75 9.75 0 010 13.12.75.75 0 11-1.06-1.06 8.25 8.25 0 000-11.00.75.75 0 010-1.06zM15.89 8.11a.75.75 0 011.06 0 6 6 0 010 7.78.75.75 0 11-1.06-1.06 4.5 4.5 0 000-5.66.75.75 0 010-1.06z" />
+                    </svg>
+                </button>
+
+                <div id="options-grid" class="grid grid-cols-2 sm:grid-cols-4 gap-6 w-full"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Écran des Résultats -->
+    <div id="results-screen" class="fixed inset-0 z-50 bg-slate-50 hidden overflow-y-auto p-4 sm:p-8">
+        <div class="max-w-6xl mx-auto">
+            <h2 class="text-3xl font-black text-center text-slate-800 mb-8">Bilan de ton exercice</h2>
+            
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
+                <!-- Pas encore connu -->
+                <div class="bg-red-50 border-2 border-red-100 rounded-[40px] flex flex-col">
+                    <div class="p-4 text-center font-black text-red-600 uppercase text-xs tracking-tighter">Je ne connais pas encore</div>
+                    <div id="res-level-0" class="p-4 flex flex-wrap justify-center gap-3"></div>
+                </div>
+                
+                <!-- En cours -->
+                <div class="bg-orange-50 border-2 border-orange-100 rounded-[40px] flex flex-col">
+                    <div class="p-4 text-center font-black text-orange-600 uppercase text-xs tracking-tighter">Je commence à connaître</div>
+                    <div id="res-level-1" class="p-4 flex flex-wrap justify-center gap-3"></div>
+                </div>
+                
+                <!-- Connu -->
+                <div class="bg-green-50 border-2 border-green-100 rounded-[40px] flex flex-col">
+                    <div class="p-4 text-center font-black text-green-600 uppercase text-xs tracking-tighter">Je connais</div>
+                    <div id="res-level-2" class="p-4 flex flex-wrap justify-center gap-3"></div>
+                </div>
+            </div>
+
+            <div class="flex justify-center pb-12">
+                <button onclick="showHome()" class="bg-indigo-600 text-white font-black py-4 px-12 rounded-full text-xl shadow-lg hover:scale-105 active:scale-95 transition-all">
+                    Recommencer
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const SVG_KNEE = `<svg viewBox="0 0 100 100" class="w-16 h-16"><text x="20" y="80" font-size="50">🦵</text><path d="M85 15 L55 45" stroke="#ef4444" stroke-width="6" fill="none" stroke-linecap="round"/><path d="M55 30 L55 45 L70 45" stroke="#ef4444" stroke-width="6" fill="none" stroke-linecap="round"/></svg>`;
+        const SVG_SHOULDERS = `<svg viewBox="0 0 100 100" class="w-16 h-16"><text x="50%" y="90" font-size="75" text-anchor="middle" opacity="0.3" filter="grayscale(1)">👤</text><path d="M2 45 L26 62" stroke="#ef4444" stroke-width="5" fill="none" stroke-linecap="round"/><path d="M16 62 L26 62 L26 52" stroke="#ef4444" stroke-width="5" fill="none" stroke-linecap="round"/><path d="M98 45 L74 62" stroke="#ef4444" stroke-width="5" fill="none" stroke-linecap="round"/><path d="M84 62 L74 62 L74 52" stroke="#ef4444" stroke-width="5" fill="none" stroke-linecap="round"/></svg>`;
+
+        const COLORS = [
+            { id: 'white', en: 'white', type: 'color', val: '#FFFFFF' },
+            { id: 'black', en: 'black', type: 'color', val: '#000000' },
+            { id: 'red', en: 'red', type: 'color', val: '#EF4444' },
+            { id: 'yellow', en: 'yellow', type: 'color', val: '#FACC15' },
+            { id: 'green', en: 'green', type: 'color', val: '#22C55E' },
+            { id: 'blue', en: 'blue', type: 'color', val: '#3B82F6' },
+            { id: 'brown', en: 'brown', type: 'color', val: '#78350F' },
+            { id: 'grey', en: 'grey', type: 'color', val: '#94A3B8' },
+            { id: 'pink', en: 'pink', type: 'color', val: '#EC4899' },
+            { id: 'purple', en: 'purple', type: 'color', val: '#A855F7' },
+            { id: 'orange', en: 'orange', type: 'color', val: '#F97316' }
+        ];
+
+        const BODY_PARTS = [
+            { id: 'head', en: 'head', type: 'icon', val: '🙆‍♂️' },
+            { id: 'shoulders', en: 'shoulders', type: 'svg', val: SVG_SHOULDERS },
+            { id: 'knees', en: 'knees', type: 'svg', val: SVG_KNEE },
+            { id: 'toes', en: 'toes', type: 'icon', val: '👣' },
+            { id: 'eyes', en: 'eyes', type: 'icon', val: '👀' },
+            { id: 'ears', en: 'ears', type: 'icon', val: '👂' },
+            { id: 'mouth', en: 'mouth', type: 'icon', val: '👄' },
+            { id: 'nose', en: 'nose', type: 'icon', val: '👃' },
+            { id: 'hair', en: 'hair', type: 'icon', val: '💇' },
+            { id: 'teeth', en: 'teeth', type: 'icon', val: '🦷' },
+            { id: 'big', en: 'big', type: 'icon', val: '🐘' },
+            { id: 'small', en: 'small', type: 'icon', val: '🐭' }
+        ];
+
+        let state = {
+            mode: null,
+            pool: [],
+            questions: [],
+            currentIndex: 0,
+            scores: {}, 
+            canClick: true
+        };
+
+        function speak(text) {
+            window.speechSynthesis.cancel();
+            const utterance = new SpeechSynthesisUtterance(text);
+            utterance.lang = 'en-US';
+            utterance.rate = 0.8;
+            window.speechSynthesis.speak(utterance);
+        }
+
+        function createVisual(item, size = "large") {
+            const div = document.createElement('div');
+            const dim = size === "large" ? "w-full aspect-square" : "w-16 h-16";
+            div.className = `${dim} flex items-center justify-center rounded-2xl overflow-hidden shadow-inner cursor-pointer`;
+            if (item.type === 'color') {
+                div.style.backgroundColor = item.val;
+                div.style.border = "1px solid #e2e8f0";
+            } else if (item.type === 'icon') {
+                div.className += " text-4xl sm:text-5xl bg-white";
+                div.textContent = item.val;
+            } else {
+                div.className += " bg-white p-2";
+                div.innerHTML = item.val;
+            }
+            if(size === "small") {
+                div.onclick = (e) => { e.stopPropagation(); speak(item.en); };
+            }
+            return div;
+        }
+
+        function startGame(mode) {
+            state.mode = mode;
+            const originalPool = mode === 'colors' ? COLORS : BODY_PARTS;
+            state.pool = [...originalPool];
+            
+            let qList = [];
+            state.pool.forEach(item => {
+                qList.push({...item});
+                qList.push({...item});
+                state.scores[item.id] = 0;
+            });
+            
+            state.questions = qList.sort(() => Math.random() - 0.5);
+            state.currentIndex = 0;
+            state.canClick = true;
+
+            document.getElementById('welcome-screen').classList.add('hidden');
+            document.getElementById('game-interface').classList.remove('hidden');
+            document.getElementById('total-steps').textContent = state.questions.length;
+            
+            nextQuestion();
+        }
+
+        function nextQuestion() {
+            if (state.currentIndex >= state.questions.length) {
+                showResults();
+                return;
+            }
+
+            state.canClick = true;
+            const target = state.questions[state.currentIndex];
+            document.getElementById('current-step').textContent = state.currentIndex + 1;
+            document.getElementById('progress-fill').style.width = `${(state.currentIndex / state.questions.length) * 100}%`;
+            
+            const grid = document.getElementById('options-grid');
+            grid.innerHTML = '';
+
+            let distractors = state.pool.filter(i => i.id !== target.id).sort(() => Math.random() - 0.5).slice(0, 3);
+            let options = [target, ...distractors].sort(() => Math.random() - 0.5);
+
+            options.forEach(item => {
+                const card = document.createElement('div');
+                card.className = "word-card bg-white p-3 rounded-[32px] border-4 border-slate-100 shadow-sm cursor-pointer";
+                card.appendChild(createVisual(item));
+                
+                card.onclick = () => {
+                    if (!state.canClick) return;
+                    state.canClick = false;
+                    
+                    if (item.id === target.id) {
+                        card.classList.add('correct');
+                        state.scores[target.id]++;
+                    } else {
+                        card.classList.add('wrong');
+                    }
+
+                    setTimeout(() => {
+                        state.currentIndex++;
+                        nextQuestion();
+                    }, 1000);
+                };
+                grid.appendChild(card);
+            });
+
+            setTimeout(() => speak(target.en), 300);
+            document.getElementById('audio-btn').onclick = () => speak(target.en);
+        }
+
+        function showResults() {
+            document.getElementById('game-interface').classList.add('hidden');
+            document.getElementById('results-screen').classList.remove('hidden');
+
+            const cols = [
+                document.getElementById('res-level-0'),
+                document.getElementById('res-level-1'),
+                document.getElementById('res-level-2')
+            ];
+            cols.forEach(c => c.innerHTML = '');
+
+            state.pool.forEach(item => {
+                const score = state.scores[item.id];
+                const card = createVisual(item, "small");
+                cols[score].appendChild(card);
+            });
+        }
+
+        function showHome() {
+            document.getElementById('results-screen').classList.add('hidden');
+            document.getElementById('game-interface').classList.add('hidden');
+            document.getElementById('welcome-screen').classList.remove('hidden');
+            initDecor();
+        }
+
+        function initDecor() {
+            const decorEl = document.getElementById('bg-decor');
+            decorEl.innerHTML = '';
+            
+            const dotColors = ['#EF4444', '#FACC15', '#22C55E', '#3B82F6', '#A855F7', '#F97316'];
+            const bodyIcons = ['🙆‍♂️', '🦶', '👂', '👀', '👃', '🦷', '🐘', '🐭'];
+            
+            // On génère environ 25-30 éléments au total
+            for (let i = 0; i < 26; i++) {
+                const div = document.createElement('div');
+                div.className = 'floating-item';
+                
+                // On alterne entre pastilles de couleur et émojis corps
+                if (Math.random() > 0.5) {
+                    const dot = document.createElement('div');
+                    dot.className = 'color-dot';
+                    dot.style.backgroundColor = dotColors[Math.floor(Math.random() * dotColors.length)];
+                    div.appendChild(dot);
+                } else {
+                    div.className += ' text-5xl';
+                    div.textContent = bodyIcons[Math.floor(Math.random() * bodyIcons.length)];
+                }
+                
+                div.style.left = Math.random() * 100 + 'vw';
+                div.style.top = Math.random() * 100 + 'vh';
+                div.style.animationDuration = (12 + Math.random() * 12) + 's';
+                div.style.animationDelay = -(Math.random() * 20) + 's';
+                decorEl.appendChild(div);
+            }
+        }
+
+        window.onload = initDecor;
+    </script>
+</body>
+</html>
