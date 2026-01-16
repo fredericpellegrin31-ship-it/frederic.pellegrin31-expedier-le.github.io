@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Le Jeu des Couleurs - Spécial CE1</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600&display=swap');
+        
+        body {
+            font-family: 'Fredoka', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow-x: hidden;
+        }
+
+        .glass-card {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 2rem;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.2);
+        }
+
+        .color-disk {
+            transition: all 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.15);
+            border: 10px solid white;
+        }
+
+        .mic-btn {
+            transition: all 0.3s ease;
+        }
+
+        .mic-btn.active {
+            animation: pulse-mic 1.2s infinite;
+            background-color: #ef4444 !important;
+        }
+
+        @keyframes pulse-mic {
+            0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.4); }
+            70% { transform: scale(1.1); box-shadow: 0 0 0 20px rgba(239, 68, 68, 0); }
+            100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
+        }
+
+        .floating {
+            animation: float 3s ease-in-out infinite;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-10px); }
+        }
+    </style>
+</head>
+<body class="p-4">
+
+    <!-- Écran de démarrage -->
+    <div id="start-screen" class="glass-card p-10 text-center max-w-md w-full border-4 border-white/50">
+        <div class="text-7xl mb-6 floating">🌈</div>
+        <h1 class="text-4xl font-bold text-indigo-700 mb-2">Les Couleurs</h1>
+        <p class="text-gray-600 mb-8 text-xl font-medium">Dis le nom de la couleur en anglais !</p>
+        <button onclick="startGame()" class="bg-gradient-to-r from-green-400 to-blue-500 hover:scale-105 transform text-white font-bold py-4 px-10 rounded-2xl w-full text-2xl shadow-xl transition-all">
+            JOUER !
+        </button>
+    </div>
+
+    <!-- Interface du jeu -->
+    <div id="game-screen" class="hidden w-full max-w-md">
+        <div class="glass-card p-8 text-center relative overflow-hidden border-4 border-white/50">
+            
+            <div class="flex justify-between items-center mb-8">
+                <div class="bg-yellow-100 text-yellow-700 px-5 py-2 rounded-full font-bold shadow-sm">Étoiles: <span id="score">0</span> ⭐</div>
+                <div class="text-indigo-400 font-bold text-lg"><span id="question-count">1</span> / 12</div>
+            </div>
+
+            <div class="flex flex-col items-center mb-8">
+                <div id="color-target" class="color-disk w-44 h-44 rounded-full mb-6"></div>
+                <div id="status-label" class="text-indigo-900 font-bold text-2xl h-8 mb-2">C'est quelle couleur ?</div>
+                <p id="sub-label" class="text-gray-400 text-lg">Appuie et parle !</p>
+            </div>
+
+            <!-- Contrôles -->
+            <div class="flex flex-col items-center gap-6">
+                <button id="mic-btn" onclick="startListening()" class="mic-btn bg-indigo-600 p-8 rounded-full text-white shadow-2xl hover:bg-indigo-700">
+                    <svg id="mic-icon" xmlns="http://www.w3.org/2000/svg" class="h-12 w-12" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
+                    </svg>
+                </button>
+                <div id="heard-bubble" class="hidden bg-indigo-50 text-indigo-600 px-4 py-2 rounded-xl border border-indigo-100 italic text-lg">
+                    "..."
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Écran de fin -->
+    <div id="end-screen" class="hidden glass-card p-10 text-center max-w-md w-full">
+        <div id="trophy" class="text-8xl mb-4">🎈</div>
+        <h2 class="text-4xl font-bold mb-2 text-gray-800" id="end-title">Bravo !</h2>
+        <p id="final-result" class="text-3xl font-bold text-indigo-600 mb-6">Tu as 0 étoile !</p>
+        <div id="rank-message" class="mb-8 p-5 bg-yellow-50 rounded-2xl text-indigo-800 font-semibold text-xl border border-yellow-100"></div>
+        <button onclick="location.reload()" class="bg-indigo-600 text-white font-bold py-4 px-10 rounded-2xl w-full text-2xl shadow-lg transition-all hover:bg-indigo-700">
+            REFAIRE LE JEU
+        </button>
+    </div>
+
+    <script>
+        // Vocabulaire des 11 couleurs demandées
+        const colorData = [
+            { name: "Purple", hex: "#8B5CF6" },  // Violet
+            { name: "Blue", hex: "#3B82F6" },    // Bleu
+            { name: "Green", hex: "#10B981" },   // Vert
+            { name: "Yellow", hex: "#FBBF24" },  // Jaune
+            { name: "Orange", hex: "#F97316" },  // Orange
+            { name: "Red", hex: "#EF4444" },     // Rouge
+            { name: "Black", hex: "#1F2937" },   // Noir
+            { name: "White", hex: "#FFFFFF" },   // Blanc
+            { name: "Brown", hex: "#78350F" },   // Marron
+            { name: "Gray", hex: "#9CA3AF" },    // Gris
+            { name: "Pink", hex: "#EC4899" }     // Rose
+        ];
+
+        let score = 0;
+        let currentQuestion = 0;
+        let targetColor = null;
+        let previousColorName = null;
+        let isListening = false;
+        const totalQuestions = 12;
+
+        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+        let recognition = null;
+
+        if (SpeechRecognition) {
+            recognition = new SpeechRecognition();
+            recognition.lang = 'en-US';
+            recognition.interimResults = false;
+
+            recognition.onresult = (event) => {
+                const speechResult = event.results[0][0].transcript.toLowerCase().trim();
+                handleVoiceInput(speechResult);
+            };
+
+            recognition.onspeechend = () => stopMicUI();
+            recognition.onnomatch = () => handleVoiceInput("");
+            recognition.onerror = (event) => {
+                stopMicUI();
+                if (isListening) handleVoiceInput("");
+            };
+        }
+
+        function speakWord(text) {
+            // Annule toute lecture en cours pour éviter les superpositions
+            window.speechSynthesis.cancel();
+            
+            const utterance = new SpeechSynthesisUtterance(text);
+            utterance.lang = 'en-US';
+            utterance.rate = 0.85; 
+            window.speechSynthesis.speak(utterance);
+        }
+
+        function startGame() {
+            document.getElementById('start-screen').classList.add('hidden');
+            document.getElementById('game-screen').classList.remove('hidden');
+            nextQuestion();
+        }
+
+        function nextQuestion() {
+            if (currentQuestion >= totalQuestions) {
+                showEndScreen();
+                return;
+            }
+
+            currentQuestion++;
+            document.getElementById('question-count').innerText = currentQuestion;
+            document.getElementById('status-label').innerText = "C'est quelle couleur ?";
+            document.getElementById('status-label').className = "text-indigo-900 font-bold text-2xl h-8 mb-2";
+            document.getElementById('heard-bubble').classList.add('hidden');
+            document.getElementById('mic-btn').disabled = false;
+            
+            // Logique anti-répétition
+            let newTargetColor;
+            do {
+                newTargetColor = colorData[Math.floor(Math.random() * colorData.length)];
+            } while (newTargetColor.name === previousColorName);
+            
+            targetColor = newTargetColor;
+            previousColorName = targetColor.name;
+            
+            const disk = document.getElementById('color-target');
+            disk.style.backgroundColor = targetColor.hex;
+            disk.style.borderColor = (targetColor.name === "White") ? "#e2e8f0" : "white";
+            disk.style.transform = "scale(1)";
+        }
+
+        function startListening() {
+            if (!recognition || isListening) return;
+            try {
+                recognition.start();
+                isListening = true;
+                document.getElementById('mic-btn').classList.add('active');
+                document.getElementById('status-label').innerText = "Je t'écoute...";
+            } catch (e) { console.error(e); }
+        }
+
+        function stopMicUI() {
+            isListening = false;
+            document.getElementById('mic-btn').classList.remove('active');
+        }
+
+        function handleVoiceInput(result) {
+            const micBtn = document.getElementById('mic-btn');
+            const statusLabel = document.getElementById('status-label');
+            const heardBubble = document.getElementById('heard-bubble');
+            
+            if (micBtn.disabled) return; 
+
+            micBtn.disabled = true;
+            heardBubble.innerText = result ? `J'ai entendu : "${result}"` : "Je n'ai pas bien entendu...";
+            heardBubble.classList.remove('hidden');
+
+            const isCorrect = result.toLowerCase().includes(targetColor.name.toLowerCase());
+
+            if (isCorrect) {
+                score++;
+                document.getElementById('score').innerText = score;
+                statusLabel.innerText = "C'est ça ! Super ! ✅";
+                statusLabel.classList.add('text-green-600');
+                
+                confetti({
+                    particleCount: 100,
+                    spread: 70,
+                    origin: { y: 0.6 },
+                    colors: [targetColor.hex, '#ffffff']
+                });
+
+                // Succès : Great job + Nom de la couleur
+                setTimeout(() => {
+                    speakWord(`Great job! ${targetColor.name}`);
+                    setTimeout(nextQuestion, 2500); // Un peu plus long pour laisser le temps de parler
+                }, 200);
+
+            } else {
+                statusLabel.innerText = "Écoute bien... 👂";
+                statusLabel.classList.add('text-red-500');
+                
+                // Erreur : Juste le nom de la couleur pour corriger
+                setTimeout(() => {
+                    speakWord(targetColor.name); 
+                    setTimeout(nextQuestion, 2500);
+                }, 500);
+            }
+        }
+
+        function showEndScreen() {
+            document.getElementById('game-screen').classList.add('hidden');
+            document.getElementById('end-screen').classList.remove('hidden');
+            document.getElementById('final-result').innerText = `Tu as gagné ${score} étoile(s) !`;
+            
+            let rank = "";
+            let trophy = "🎈";
+            let title = "Bravo !";
+
+            if (score === 12) { 
+                title = "Champion ! 🏆";
+                rank = "C'est incroyable ! Tu connais parfaitement toutes les couleurs !"; 
+                trophy = "🥇"; 
+            }
+            else if (score >= 9) { 
+                title = "Super ! 🌟";
+                rank = "Beau travail ! Tu te débrouilles très bien en anglais !"; 
+                trophy = "🥈"; 
+            }
+            else if (score >= 6) { 
+                title = "Bien ! 👍";
+                rank = "C'est un bon début, continue de t'entraîner !"; 
+                trophy = "🥉"; 
+            }
+            else { 
+                title = "Courage ! 💪";
+                rank = "Rejoue encore pour apprendre toutes les couleurs !"; 
+                trophy = "🎈"; 
+            }
+            
+            document.getElementById('end-title').innerText = title;
+            document.getElementById('rank-message').innerText = rank;
+            document.getElementById('trophy').innerText = trophy;
+
+            if (score >= 9) {
+                confetti({ particleCount: 150, spread: 100, origin: { y: 0.5 } });
+            }
+        }
+    </script>
+</body>
+</html>
