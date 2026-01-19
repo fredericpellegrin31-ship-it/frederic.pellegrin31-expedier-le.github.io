@@ -1,450 +1,382 @@
-
+<!DOCTYPE html>
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>English Bingo - Cycle 2</title>
+    <title>Rainbow Bounce - Learn English Colors</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Fredoka+One&family=Quicksand:wght@400;600;700&display=swap');
-        
-        :root {
-            --bg-main: #f0f9ff;
-        }
+        @import url('https://fonts.googleapis.com/css2?family=Fredoka+One&family=Quicksand:wght@500;700&display=swap');
 
         body {
             font-family: 'Quicksand', sans-serif;
-            background-color: var(--bg-main);
+            overflow: hidden; 
+            background-color: #f0f9ff;
+            user-select: none;
+            touch-action: manipulation;
+            margin: 0;
             height: 100vh;
-            height: -webkit-fill-available;
-            overflow: hidden;
-            display: flex;
+            width: 100vw;
+        }
+
+        .title-font {
+            font-family: 'Fredoka+One', cursive;
+        }
+
+        .ball {
+            position: absolute;
+            border-radius: 50%;
+            cursor: pointer;
+            transition: transform 0.1s;
+            box-shadow: inset -10px -10px 15px rgba(0,0,0,0.2), 0 5px 15px rgba(0,0,0,0.1);
+            touch-action: none;
+        }
+
+        .ball:active {
+            transform: scale(0.8);
+        }
+
+        .btn-bounce {
+            transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+
+        .btn-bounce:hover {
+            transform: scale(1.1);
+        }
+
+        .screen {
+            display: none;
+            height: 100%;
+            width: 100%;
             flex-direction: column;
             align-items: center;
             justify-content: center;
-            margin: 0;
-            padding: 10px;
-        }
-
-        #bg-canvas {
-            position: fixed;
+            position: absolute;
             top: 0;
             left: 0;
-            width: 100%;
-            height: 100%;
-            z-index: -1;
-            pointer-events: none;
         }
 
-        h1 { font-family: 'Fredoka One', cursive; text-shadow: 2px 2px 0px rgba(0,0,0,0.1); }
-
-        .menu-card {
-            background: white;
-            padding: 1.5rem;
-            border-radius: 30px;
-            box-shadow: 0 10px 0px rgba(59, 130, 246, 0.2);
-            border: 6px solid #3b82f6;
-            max-width: 400px;
-            width: 95%;
-            z-index: 10;
+        .active-screen {
+            display: flex;
         }
 
-        .bingo-ticket {
-            background: #fffdf0;
-            border: 6px solid #60a5fa;
-            border-radius: 20px;
-            padding: 10px;
-            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
-            position: relative;
-            background-image: radial-gradient(#e5e7eb 1px, transparent 1px);
-            background-size: 15px 15px;
-            width: 100%;
-        }
-
-        .bingo-grid {
-            display: grid;
-            grid-template-columns: repeat(4, 1fr);
-            grid-template-rows: repeat(2, 1fr);
-            gap: 8px;
-        }
-
-        .bingo-cell {
-            aspect-ratio: 1/1;
-            background: white;
-            border: 2px solid #d1d5db;
-            border-radius: 10px;
+        .color-bubble {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
             cursor: pointer;
             display: flex;
             align-items: center;
             justify-content: center;
-            position: relative;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
             transition: all 0.2s;
-            box-shadow: inset 0 2px 4px rgba(0,0,0,0.05);
         }
 
-        .token {
-            position: absolute;
-            width: 85%;
-            height: 85%;
-            background: rgba(239, 68, 68, 0.85);
-            border: 3px solid #b91c1c;
-            border-radius: 50%;
-            z-index: 10;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 1rem;
-            animation: stamp 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        @media (min-width: 768px) {
+            .color-bubble { width: 120px; height: 120px; }
         }
 
-        @keyframes stamp {
-            0% { transform: scale(3); opacity: 0; }
-            100% { transform: scale(1); opacity: 1; }
-        }
-
-        .btn-fancy { transition: all 0.2s; touch-action: manipulation; }
-        .btn-fancy:active { transform: scale(0.95); }
-
-        .warning-shake {
-            animation: shake 0.5s;
-            color: #ef4444 !important;
+        .color-bubble:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 15px rgba(0,0,0,0.15);
         }
 
         @keyframes shake {
             0%, 100% { transform: translateX(0); }
-            25% { transform: translateX(-5px); }
-            75% { transform: translateX(5px); }
+            25% { transform: translateX(-10px); }
+            75% { transform: translateX(10px); }
+        }
+        .animate-shake { animation: shake 0.2s ease-in-out 0s 2; }
+
+        .trophy-bounce {
+            animation: bounce 2s infinite;
         }
 
-        @media (max-height: 600px) {
-            .text-6xl { font-size: 3rem; }
-            .text-5xl { font-size: 2.5rem; }
-            .p-6 { padding: 1rem; }
-            .mb-8 { margin-bottom: 1rem; }
+        @keyframes bounce {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-20px); }
         }
     </style>
 </head>
 <body>
 
-    <canvas id="bg-canvas"></canvas>
-
-    <!-- MENU D'ACCUEIL -->
-    <div id="menu" class="menu-card text-center">
-        <h1 class="text-3xl sm:text-4xl text-blue-600 mb-1">English</h1>
-        <h1 class="text-5xl sm:text-6xl text-red-500 mb-6">BINGO!</h1>
-        
-        <div class="space-y-3 sm:space-y-4">
-            <button onclick="startGame('colors')" class="btn-fancy w-full bg-blue-500 hover:bg-blue-600 text-white font-bold py-4 px-6 rounded-2xl text-lg shadow-[0_4px_0_#1e40af]">
-                🎨 Colors
-            </button>
-            <button onclick="startGame('body')" class="btn-fancy w-full bg-green-500 hover:bg-green-600 text-white font-bold py-4 px-6 rounded-2xl text-lg shadow-[0_4px_0_#166534]">
-                👤 Body parts
-            </button>
-            <button onclick="startGame('mixed')" class="btn-fancy w-full bg-purple-500 hover:bg-purple-600 text-white font-bold py-4 px-6 rounded-2xl text-lg shadow-[0_4px_0_#6b21a8]">
-                🌟 Mixed
-            </button>
+    <!-- Ecran d'accueil -->
+    <div id="screen-home" class="screen active-screen bg-gradient-to-br from-blue-400 to-purple-500 text-white p-4 text-center">
+        <h1 class="title-font text-5xl md:text-7xl mb-12 drop-shadow-lg">Rainbow Bounce</h1>
+        <div class="flex flex-col md:flex-row gap-6">
+            <button onclick="initSpeech(); showScreen('screen-learn')" class="btn-bounce bg-yellow-400 hover:bg-yellow-300 text-blue-900 px-10 py-5 rounded-full text-2xl font-bold shadow-xl">LEARN</button>
+            <button onclick="initSpeech(); startGame()" class="btn-bounce bg-green-500 hover:bg-green-400 text-white px-10 py-5 rounded-full text-2xl font-bold shadow-xl">PLAY</button>
         </div>
     </div>
 
-    <!-- CONTENEUR DU JEU -->
-    <div id="game-container" class="hidden w-full max-w-md h-full flex flex-col justify-between py-4 px-2 z-10">
-        
-        <!-- HEADER -->
-        <div class="flex justify-between items-center shrink-0">
-            <button onclick="backToMenu()" class="bg-white px-3 py-1 rounded-full font-bold text-blue-500 border-2 border-blue-500 text-sm">
-                🏠 Menu
+    <!-- Ecran d'apprentissage -->
+    <div id="screen-learn" class="screen bg-white overflow-y-auto">
+        <button onclick="showScreen('screen-home')" class="absolute top-4 left-4 z-50 bg-gray-200 p-3 rounded-full hover:bg-gray-300 transition-colors">
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+        </button>
+        <h2 class="title-font text-3xl text-blue-600 my-8 text-center px-4">Listen to the colors!</h2>
+        <div id="learn-grid" class="grid grid-cols-3 md:grid-cols-5 lg:grid-cols-6 gap-6 p-4 max-w-5xl mx-auto">
+            <!-- Injecté par JS -->
+        </div>
+    </div>
+
+    <!-- Ecran de Jeu -->
+    <div id="screen-game" class="screen bg-blue-50 overflow-hidden">
+        <div class="absolute top-4 left-4 right-4 flex justify-between items-center z-50">
+            <button onclick="stopGame()" class="bg-white/90 backdrop-blur p-2 rounded-full shadow-md">
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
             </button>
-            <div id="score" class="bg-yellow-400 px-4 py-1 rounded-full font-bold text-yellow-900 border-2 border-white shadow-md text-lg">
-                ⭐ 0 / 8
+            <div class="bg-white/90 backdrop-blur px-4 py-1 rounded-full shadow-md text-sm md:text-lg font-bold text-blue-600">
+                <span id="current-question">1</span> / 12
             </div>
-        </div>
-
-        <!-- ZONE AUDIO / CONTRÔLES -->
-        <div class="bg-white p-4 rounded-3xl shadow-lg w-full border-2 border-blue-100 flex flex-col items-center gap-2 shrink-0">
-            <div class="flex items-center gap-4">
-                <button onclick="playCurrentWord()" class="btn-fancy bg-orange-400 hover:bg-orange-500 text-white w-14 h-14 rounded-full text-2xl shadow-[0_4px_0_#c2410c] flex items-center justify-center">
-                    🔊
-                </button>
-                <button id="next-btn" onclick="handleNextClick()" class="btn-fancy bg-blue-500 hover:bg-blue-600 text-white px-6 py-3 rounded-2xl font-black text-xl shadow-[0_4px_0_#1e40af]">
-                    Next ➡
-                </button>
-            </div>
-            <div id="status-msg" class="text-sm sm:text-base flex items-center text-center text-blue-700 font-bold italic h-6">
-                Écoute bien le mot...
-            </div>
-        </div>
-
-        <!-- LE CARTON DE BINGO -->
-        <div class="bingo-ticket shrink-0">
-            <div id="bingo-grid" class="bingo-grid"></div>
-        </div>
-
-        <!-- BOUTON REJOUER (FIN) -->
-        <div id="win-message" class="hidden text-center shrink-0 mb-2">
-            <button onclick="backToMenu()" class="btn-fancy bg-green-500 hover:bg-green-600 text-white font-black py-3 px-8 rounded-2xl text-xl shadow-[0_4px_0_#166534]">
-                REJOUER !
+            <button onclick="repeatColor()" class="bg-yellow-400 p-2 rounded-full shadow-md animate-pulse">
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 5L6 9H2v6h4l5 4V5z"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/></svg>
             </button>
         </div>
         
-        <div class="h-1 shrink-0"></div>
+        <div id="game-area" class="w-full h-full relative"></div>
+    </div>
+
+    <!-- Ecran de Fin (Fond Blanc pour mieux voir les confettis) -->
+    <div id="screen-result" class="screen bg-white text-blue-600 p-4 text-center">
+        <div class="mb-6 trophy-bounce">
+            <svg xmlns="http://www.w3.org/2000/svg" width="120" height="120" viewBox="0 0 24 24" fill="none" stroke="#fbbf24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/><path d="M4 22h16"/><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"/><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"/><path d="M18 2H6v7a6 6 0 0 0 12 0V2Z"/></svg>
+        </div>
+        <h2 class="title-font text-5xl mb-6 text-purple-600">Excellent!</h2>
+        <p class="text-2xl mb-10 text-gray-700 font-bold">You are a Color Champion!</p>
+        <button onclick="showScreen('screen-home')" class="btn-bounce bg-purple-600 text-white px-10 py-4 rounded-full text-xl font-bold shadow-2xl">Try Again</button>
     </div>
 
     <script>
-        const VOCABULARY = {
-            colors: [
-                { id: 'blue', term: 'blue', type: 'color', value: '#3b82f6' },
-                { id: 'red', term: 'red', type: 'color', value: '#ef4444' },
-                { id: 'yellow', term: 'yellow', type: 'color', value: '#facc15' }, // Jaune plus vif et distinct de l'orange
-                { id: 'black', term: 'black', type: 'color', value: '#000000' },
-                { id: 'brown', term: 'brown', type: 'color', value: '#78350f' },
-                { id: 'white', term: 'white', type: 'color', value: '#ffffff' },
-                { id: 'purple', term: 'purple', type: 'color', value: '#a855f7' },
-                { id: 'green', term: 'green', type: 'color', value: '#22c55e' },
-                { id: 'grey', term: 'grey', type: 'color', value: '#94a3b8' },
-                { id: 'orange', term: 'orange', type: 'color', value: '#f97316' },
-                { id: 'pink', term: 'pink', type: 'color', value: '#ec4899' }
-            ],
-            body: [
-                { id: 'nose', term: 'nose', type: 'body', emoji: '👃' },
-                { id: 'shoulders', term: 'shoulders', type: 'body', isSVG: true, svgType: 'shoulders' },
-                { id: 'hair', term: 'hair', type: 'body', emoji: '💇' },
-                { id: 'knees', term: 'knees', type: 'body', isSVG: true, svgType: 'knees' },
-                { id: 'ears', term: 'ears', type: 'body', emoji: '👂' },
-                { id: 'eyes', term: 'eyes', type: 'body', emoji: '👀' },
-                { id: 'mouth', term: 'mouth', type: 'body', emoji: '👄' },
-                { id: 'toes', term: 'toes', type: 'body', emoji: '👣' },
-                { id: 'teeth', term: 'teeth', type: 'body', emoji: '🦷' },
-                { id: 'big', term: 'big', type: 'body', emoji: '🐘' },
-                { id: 'small', term: 'small', type: 'body', emoji: '🐭' }
-            ]
-        };
+        const COLORS = [
+            { name: 'Red', hex: '#ef4444' },
+            { name: 'Blue', hex: '#3b82f6' },
+            { name: 'Green', hex: '#22c55e' },
+            { name: 'Yellow', hex: '#eab308' },
+            { name: 'Orange', hex: '#f97316' },
+            { name: 'Purple', hex: '#a855f7' },
+            { name: 'Pink', hex: '#ec4899' },
+            { name: 'Brown', hex: '#78350f' },
+            { name: 'Grey', hex: '#94a3b8' },
+            { name: 'Black', hex: '#000000' },
+            { name: 'White', hex: '#ffffff' }
+        ];
 
-        const canvas = document.getElementById('bg-canvas');
-        const ctx = canvas.getContext('2d');
-        let icons = [];
-        const emojiPool = ['🎨', '👃', '✋', '👀', '🔴', '🔵', '👂', '🟢', '🐘', '🦷', '🦵', '👄', '👣'];
+        let currentQuestion = 1;
+        let targetColor = null;
+        let lastTargetColor = null;
+        let balls = [];
+        let animationFrame;
+        const totalQuestions = 12;
 
-        function initCanvas() {
-            canvas.width = window.innerWidth;
-            canvas.height = window.innerHeight;
-            icons = [];
-            for(let i=0; i<8; i++) {
-                icons.push({
-                    x: Math.random() * canvas.width,
-                    y: Math.random() * canvas.height,
-                    dx: (Math.random() - 0.5) * 1.5,
-                    dy: (Math.random() - 0.5) * 1.5,
-                    text: emojiPool[Math.floor(Math.random() * emojiPool.length)],
-                    size: 20 + Math.random() * 15
-                });
+        let viewWidth = window.innerWidth;
+        let viewHeight = window.innerHeight;
+
+        window.addEventListener('resize', () => {
+            viewWidth = window.innerWidth;
+            viewHeight = window.innerHeight;
+        });
+
+        // Initialisation de la voix (nécessaire pour Netlify/Autoplay)
+        let voicesLoaded = false;
+        function initSpeech() {
+            if (!voicesLoaded) {
+                const utterance = new SpeechSynthesisUtterance("");
+                window.speechSynthesis.speak(utterance);
+                voicesLoaded = true;
             }
         }
 
-        function drawBackground() {
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
-            ctx.globalAlpha = 0.1;
-            icons.forEach(icon => {
-                ctx.font = `${icon.size}px Arial`;
-                ctx.fillText(icon.text, icon.x, icon.y);
-                icon.x += icon.dx;
-                icon.y += icon.dy;
-                if(icon.x < 0 || icon.x > canvas.width - icon.size) icon.dx *= -1;
-                if(icon.y < icon.size || icon.y > canvas.height) icon.dy *= -1;
-            });
-            requestAnimationFrame(drawBackground);
-        }
-
-        window.addEventListener('resize', initCanvas);
-        initCanvas();
-        drawBackground();
-
-        let currentPool = []; 
-        let currentCardItems = [];
-        let currentAudioWord = '';
-        let foundItems = new Set();
-        let synthInitialized = false;
-
-        function initSynth() {
-            if (synthInitialized) return;
-            const silent = new SpeechSynthesisUtterance("");
-            window.speechSynthesis.speak(silent);
-            synthInitialized = true;
-        }
-
-        function startGame(mode) {
-            initSynth();
-            document.getElementById('menu').classList.add('hidden');
-            document.getElementById('game-container').classList.remove('hidden');
-            document.getElementById('win-message').classList.add('hidden');
-            document.getElementById('next-btn').disabled = false;
-            foundItems.clear();
-            
-            let basePool = [];
-            if (mode === 'colors') basePool = [...VOCABULARY.colors];
-            else if (mode === 'body') basePool = [...VOCABULARY.body];
-            else basePool = [...VOCABULARY.colors, ...VOCABULARY.body];
-
-            currentPool = [...basePool].sort(() => 0.5 - Math.random());
-            currentCardItems = [...basePool].sort(() => 0.5 - Math.random()).slice(0, 8);
-
-            generateCard();
-            nextWord();
-            updateScoreDisplay();
-        }
-
-        function generateCard() {
-            const grid = document.getElementById('bingo-grid');
-            grid.innerHTML = '';
-            
-            currentCardItems.forEach(item => {
-                const cell = document.createElement('div');
-                cell.className = 'bingo-cell';
-                cell.onclick = () => checkItem(item, cell);
-
-                if (item.type === 'color') {
-                    const circle = document.createElement('div');
-                    circle.style.backgroundColor = item.value;
-                    circle.className = 'w-2/3 h-2/3 rounded-full border-2 border-white shadow-sm';
-                    cell.appendChild(circle);
-                } else if (item.isSVG) {
-                    const iconSize = "w-full h-full p-2";
-                    if (item.svgType === 'shoulders') {
-                        cell.innerHTML = `
-                            <div class="relative ${iconSize} flex items-center justify-center">
-                                <span class="text-3xl sm:text-4xl">🤷</span>
-                                <svg class="absolute inset-0" viewBox="0 0 100 100">
-                                    <defs>
-                                        <marker id="arrowhead-s" markerWidth="10" markerHeight="10" refX="0" refY="3" orient="auto">
-                                            <polygon points="0 0, 6 3, 0 6" fill="red" />
-                                        </marker>
-                                    </defs>
-                                    <line x1="15" y1="15" x2="30" y2="35" stroke="red" stroke-width="4" marker-end="url(#arrowhead-s)" />
-                                    <line x1="85" y1="15" x2="70" y2="35" stroke="red" stroke-width="4" marker-end="url(#arrowhead-s)" />
-                                </svg>
-                            </div>`;
-                    } else if (item.svgType === 'knees') {
-                        cell.innerHTML = `
-                            <div class="relative ${iconSize} flex items-center justify-center">
-                                <span class="text-3xl sm:text-4xl">🦵</span>
-                                <svg class="absolute inset-0" viewBox="0 0 100 100">
-                                    <defs>
-                                        <marker id="arrowhead-k" markerWidth="10" markerHeight="10" refX="0" refY="3" orient="auto">
-                                            <polygon points="0 0, 6 3, 0 6" fill="red" />
-                                        </marker>
-                                    </defs>
-                                    <line x1="80" y1="20" x2="55" y2="45" stroke="red" stroke-width="4" marker-end="url(#arrowhead-k)" />
-                                </svg>
-                            </div>`;
-                    }
-                } else {
-                    cell.innerHTML = `<div class="flex flex-col items-center">
-                        <span class="text-3xl sm:text-4xl">${item.emoji}</span>
-                        ${(item.id === 'big' || item.id === 'small') ? `<span class="text-[8px] font-bold uppercase text-gray-300 leading-none">${item.id}</span>` : ''}
-                    </div>`;
-                }
-                grid.appendChild(cell);
-            });
-        }
-
-        function nextWord() {
-            if (currentPool.length === 0) {
-                document.getElementById('status-msg').innerText = "Plus de mots !";
-                document.getElementById('next-btn').disabled = true;
-                return;
-            }
-
-            const drawnItem = currentPool.shift();
-            currentAudioWord = drawnItem.term;
-            
-            playCurrentWord();
-            const status = document.getElementById('status-msg');
-            status.innerText = "Écoute bien le mot...";
-            status.classList.remove('warning-shake', 'text-red-500');
-            status.classList.add('text-blue-700');
-        }
-
-        function playCurrentWord() {
-            if (!window.speechSynthesis) return;
+        function speak(text) {
             window.speechSynthesis.cancel();
             
-            const utterance = new SpeechSynthesisUtterance(currentAudioWord);
+            const utterance = new SpeechSynthesisUtterance(text);
             utterance.lang = 'en-US';
-            utterance.rate = 0.7;
-            
-            setTimeout(() => {
-                window.speechSynthesis.speak(utterance);
-            }, 50);
-        }
+            utterance.rate = 0.85;
 
-        function handleNextClick() {
-            const isOnCard = currentCardItems.some(item => item.term === currentAudioWord);
-            const isFound = Array.from(foundItems).some(id => {
-                const allVocab = [...VOCABULARY.colors, ...VOCABULARY.body];
-                const item = allVocab.find(p => p.id === id);
-                return item && item.term === currentAudioWord;
-            });
+            const voices = window.speechSynthesis.getVoices();
+            const enVoice = voices.find(v => v.lang.includes('en-US') || v.lang.includes('en_US'));
+            if (enVoice) utterance.voice = enVoice;
 
-            if (isOnCard && !isFound) {
-                const status = document.getElementById('status-msg');
-                status.innerText = "C'est sur ton carton !";
-                status.classList.add('warning-shake', 'text-red-500');
-                playCurrentWord();
-                setTimeout(() => status.classList.remove('warning-shake'), 500);
-            } else {
-                nextWord();
-            }
-        }
-
-        function checkItem(item, element) {
-            if (foundItems.has(item.id)) return;
-
-            if (item.term === currentAudioWord) {
-                foundItems.add(item.id);
-                const token = document.createElement('div');
-                token.className = 'token';
-                token.innerHTML = '⭐';
-                element.appendChild(token);
-                updateScoreDisplay();
-                
-                if (foundItems.size === 8) endGame();
-                else {
-                    document.getElementById('status-msg').innerText = "Bravo ! Suivant...";
-                    setTimeout(nextWord, 1000);
-                }
-            } else {
-                element.classList.add('border-red-500');
-                setTimeout(() => element.classList.remove('border-red-500'), 500);
-                const utterance = new SpeechSynthesisUtterance("Try again!");
-                utterance.lang = 'en-US';
-                window.speechSynthesis.speak(utterance);
-            }
-        }
-
-        function updateScoreDisplay() {
-            document.getElementById('score').innerText = `⭐ ${foundItems.size} / 8`;
-        }
-
-        function endGame() {
-            document.getElementById('win-message').classList.remove('hidden');
-            document.getElementById('status-msg').innerText = "BINGO ! WELL DONE !";
-            confetti({ particleCount: 100, spread: 60, origin: { y: 0.8 } });
-            const utterance = new SpeechSynthesisUtterance("Bingo! Well done!");
-            utterance.lang = 'en-US';
             window.speechSynthesis.speak(utterance);
         }
 
-        function backToMenu() {
-            document.getElementById('menu').classList.remove('hidden');
-            document.getElementById('game-container').classList.add('hidden');
-            window.speechSynthesis.cancel();
+        window.speechSynthesis.onvoiceschanged = () => {
+            window.speechSynthesis.getVoices();
+        };
+
+        function showScreen(screenId) {
+            document.querySelectorAll('.screen').forEach(s => s.classList.remove('active-screen'));
+            document.getElementById(screenId).classList.add('active-screen');
+            if(screenId !== 'screen-game') {
+                cancelAnimationFrame(animationFrame);
+            }
+            if(screenId === 'screen-result') {
+                launchConfetti();
+            }
         }
 
-        if (window.speechSynthesis) {
-            window.speechSynthesis.getVoices();
-            if (speechSynthesis.onvoiceschanged !== undefined) {
-                speechSynthesis.onvoiceschanged = () => window.speechSynthesis.getVoices();
+        function launchConfetti() {
+            const duration = 4 * 1000;
+            const end = Date.now() + duration;
+
+            (function frame() {
+                confetti({
+                    particleCount: 4,
+                    angle: 60,
+                    spread: 55,
+                    origin: { x: 0 },
+                    colors: ['#ef4444', '#3b82f6', '#22c55e', '#eab308']
+                });
+                confetti({
+                    particleCount: 4,
+                    angle: 120,
+                    spread: 55,
+                    origin: { x: 1 },
+                    colors: ['#f97316', '#a855f7', '#ec4899', '#ff0000']
+                });
+
+                if (Date.now() < end) {
+                    requestAnimationFrame(frame);
+                }
+            }());
+        }
+
+        const learnGrid = document.getElementById('learn-grid');
+        COLORS.forEach(color => {
+            const div = document.createElement('div');
+            div.className = 'flex flex-col items-center justify-center p-2';
+            div.innerHTML = `
+                <div class="color-bubble" style="background-color: ${color.hex}; border: ${color.name === 'White' ? '2px solid #ddd' : 'none'}" onclick="speak('${color.name}')"></div>
+            `;
+            learnGrid.appendChild(div);
+        });
+
+        function startGame() {
+            currentQuestion = 1;
+            lastTargetColor = null;
+            showScreen('screen-game');
+            nextQuestion();
+        }
+
+        function stopGame() {
+            cancelAnimationFrame(animationFrame);
+            showScreen('screen-home');
+        }
+
+        function repeatColor() {
+            if(targetColor) speak(targetColor.name);
+        }
+
+        function nextQuestion() {
+            if (currentQuestion > totalQuestions) {
+                showScreen('screen-result');
+                speak("Excellent! You are a Champion!");
+                return;
             }
+
+            document.getElementById('current-question').innerText = currentQuestion;
+            const gameArea = document.getElementById('game-area');
+            gameArea.innerHTML = '';
+            balls = [];
+
+            let newTarget;
+            do {
+                newTarget = COLORS[Math.floor(Math.random() * COLORS.length)];
+            } while (newTarget === lastTargetColor);
+            
+            targetColor = newTarget;
+            lastTargetColor = targetColor;
+
+            const numBalls = Math.floor(Math.random() * 3) + 4;
+            let availableColors = COLORS.filter(c => c.name !== targetColor.name);
+            availableColors.sort(() => Math.random() - 0.5);
+            
+            let colorChoices = [targetColor];
+            for(let i = 0; i < numBalls - 1; i++) {
+                colorChoices.push(availableColors[i]);
+            }
+            colorChoices.sort(() => Math.random() - 0.5);
+
+            const speedLevel = Math.min(currentQuestion, 7);
+            const baseSpeed = 0.6 + (speedLevel * 0.07); 
+
+            colorChoices.forEach((color) => {
+                const ballEl = document.createElement('div');
+                ballEl.className = 'ball';
+                const size = viewWidth < 600 ? 60 + Math.random() * 20 : 80 + Math.random() * 40;
+                ballEl.style.width = `${size}px`;
+                ballEl.style.height = `${size}px`;
+                ballEl.style.backgroundColor = color.hex;
+                if(color.name === 'White') ballEl.style.border = '1px solid #ccc';
+                
+                gameArea.appendChild(ballEl);
+
+                const angle = Math.random() * Math.PI * 2;
+                const ballObj = {
+                    el: ballEl,
+                    x: Math.random() * (viewWidth - size),
+                    y: Math.random() * (viewHeight - size),
+                    dx: Math.cos(angle) * baseSpeed,
+                    dy: Math.sin(angle) * baseSpeed,
+                    size: size,
+                    colorName: color.name
+                };
+
+                ballEl.addEventListener('pointerdown', (e) => {
+                    e.preventDefault();
+                    handleBallClick(ballObj);
+                });
+                balls.push(ballObj);
+            });
+
+            speak(targetColor.name);
+            animate();
+        }
+
+        function handleBallClick(ball) {
+            if (ball.colorName === targetColor.name) {
+                ball.el.style.transform = 'scale(1.5)';
+                ball.el.style.opacity = '0';
+                ball.el.style.pointerEvents = 'none';
+                speak("Great!");
+                setTimeout(() => {
+                    currentQuestion++;
+                    nextQuestion();
+                }, 800);
+            } else {
+                speak("No, that is " + ball.colorName);
+                ball.el.classList.add('animate-shake');
+                setTimeout(() => ball.el.classList.remove('animate-shake'), 500);
+            }
+        }
+
+        function animate() {
+            balls.forEach(ball => {
+                ball.x += ball.dx;
+                ball.y += ball.dy;
+
+                if (ball.x <= 0) {
+                    ball.x = 0;
+                    ball.dx *= -1;
+                } else if (ball.x + ball.size >= viewWidth) {
+                    ball.x = viewWidth - ball.size;
+                    ball.dx *= -1;
+                }
+
+                if (ball.y <= 0) {
+                    ball.y = 0;
+                    ball.dy *= -1;
+                } else if (ball.y + ball.size >= viewHeight) {
+                    ball.y = viewHeight - ball.size;
+                    ball.dy *= -1;
+                }
+
+                ball.el.style.left = ball.x + 'px';
+                ball.el.style.top = ball.y + 'px';
+            });
+            animationFrame = requestAnimationFrame(animate);
         }
     </script>
 </body>
