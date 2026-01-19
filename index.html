@@ -1,297 +1,449 @@
-<!DOCTYPE html>
+
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Le Jeu des Couleurs - Spécial CE1</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>English Bingo - Cycle 2</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Fredoka+One&family=Quicksand:wght@400;600;700&display=swap');
         
+        :root {
+            --bg-main: #f0f9ff;
+        }
+
         body {
-            font-family: 'Fredoka', sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            min-height: 100vh;
+            font-family: 'Quicksand', sans-serif;
+            background-color: var(--bg-main);
+            height: 100vh;
+            height: -webkit-fill-available;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            margin: 0;
+            padding: 10px;
+        }
+
+        #bg-canvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+            pointer-events: none;
+        }
+
+        h1 { font-family: 'Fredoka One', cursive; text-shadow: 2px 2px 0px rgba(0,0,0,0.1); }
+
+        .menu-card {
+            background: white;
+            padding: 1.5rem;
+            border-radius: 30px;
+            box-shadow: 0 10px 0px rgba(59, 130, 246, 0.2);
+            border: 6px solid #3b82f6;
+            max-width: 400px;
+            width: 95%;
+            z-index: 10;
+        }
+
+        .bingo-ticket {
+            background: #fffdf0;
+            border: 6px solid #60a5fa;
+            border-radius: 20px;
+            padding: 10px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+            position: relative;
+            background-image: radial-gradient(#e5e7eb 1px, transparent 1px);
+            background-size: 15px 15px;
+            width: 100%;
+        }
+
+        .bingo-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            grid-template-rows: repeat(2, 1fr);
+            gap: 8px;
+        }
+
+        .bingo-cell {
+            aspect-ratio: 1/1;
+            background: white;
+            border: 2px solid #d1d5db;
+            border-radius: 10px;
+            cursor: pointer;
             display: flex;
             align-items: center;
             justify-content: center;
-            overflow-x: hidden;
+            position: relative;
+            transition: all 0.2s;
+            box-shadow: inset 0 2px 4px rgba(0,0,0,0.05);
         }
 
-        .glass-card {
-            background: rgba(255, 255, 255, 0.95);
-            backdrop-filter: blur(10px);
-            border-radius: 2rem;
-            box-shadow: 0 20px 50px rgba(0,0,0,0.2);
+        .token {
+            position: absolute;
+            width: 85%;
+            height: 85%;
+            background: rgba(239, 68, 68, 0.85);
+            border: 3px solid #b91c1c;
+            border-radius: 50%;
+            z-index: 10;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1rem;
+            animation: stamp 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
         }
 
-        .color-disk {
-            transition: all 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-            box-shadow: 0 10px 30px rgba(0,0,0,0.15);
-            border: 10px solid white;
+        @keyframes stamp {
+            0% { transform: scale(3); opacity: 0; }
+            100% { transform: scale(1); opacity: 1; }
         }
 
-        .mic-btn {
-            transition: all 0.3s ease;
+        .btn-fancy { transition: all 0.2s; touch-action: manipulation; }
+        .btn-fancy:active { transform: scale(0.95); }
+
+        .warning-shake {
+            animation: shake 0.5s;
+            color: #ef4444 !important;
         }
 
-        .mic-btn.active {
-            animation: pulse-mic 1.2s infinite;
-            background-color: #ef4444 !important;
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-5px); }
+            75% { transform: translateX(5px); }
         }
 
-        @keyframes pulse-mic {
-            0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.4); }
-            70% { transform: scale(1.1); box-shadow: 0 0 0 20px rgba(239, 68, 68, 0); }
-            100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
-        }
-
-        .floating {
-            animation: float 3s ease-in-out infinite;
-        }
-
-        @keyframes float {
-            0%, 100% { transform: translateY(0); }
-            50% { transform: translateY(-10px); }
+        @media (max-height: 600px) {
+            .text-6xl { font-size: 3rem; }
+            .text-5xl { font-size: 2.5rem; }
+            .p-6 { padding: 1rem; }
+            .mb-8 { margin-bottom: 1rem; }
         }
     </style>
 </head>
-<body class="p-4">
+<body>
 
-    <!-- Écran de démarrage -->
-    <div id="start-screen" class="glass-card p-10 text-center max-w-md w-full border-4 border-white/50">
-        <div class="text-7xl mb-6 floating">🌈</div>
-        <h1 class="text-4xl font-bold text-indigo-700 mb-2">Les Couleurs</h1>
-        <p class="text-gray-600 mb-8 text-xl font-medium">Dis le nom de la couleur en anglais !</p>
-        <button onclick="startGame()" class="bg-gradient-to-r from-green-400 to-blue-500 hover:scale-105 transform text-white font-bold py-4 px-10 rounded-2xl w-full text-2xl shadow-xl transition-all">
-            JOUER !
-        </button>
-    </div>
+    <canvas id="bg-canvas"></canvas>
 
-    <!-- Interface du jeu -->
-    <div id="game-screen" class="hidden w-full max-w-md">
-        <div class="glass-card p-8 text-center relative overflow-hidden border-4 border-white/50">
-            
-            <div class="flex justify-between items-center mb-8">
-                <div class="bg-yellow-100 text-yellow-700 px-5 py-2 rounded-full font-bold shadow-sm">Étoiles: <span id="score">0</span> ⭐</div>
-                <div class="text-indigo-400 font-bold text-lg"><span id="question-count">1</span> / 12</div>
-            </div>
-
-            <div class="flex flex-col items-center mb-8">
-                <div id="color-target" class="color-disk w-44 h-44 rounded-full mb-6"></div>
-                <div id="status-label" class="text-indigo-900 font-bold text-2xl h-8 mb-2">C'est quelle couleur ?</div>
-                <p id="sub-label" class="text-gray-400 text-lg">Appuie et parle !</p>
-            </div>
-
-            <!-- Contrôles -->
-            <div class="flex flex-col items-center gap-6">
-                <button id="mic-btn" onclick="startListening()" class="mic-btn bg-indigo-600 p-8 rounded-full text-white shadow-2xl hover:bg-indigo-700">
-                    <svg id="mic-icon" xmlns="http://www.w3.org/2000/svg" class="h-12 w-12" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
-                    </svg>
-                </button>
-                <div id="heard-bubble" class="hidden bg-indigo-50 text-indigo-600 px-4 py-2 rounded-xl border border-indigo-100 italic text-lg">
-                    "..."
-                </div>
-            </div>
+    <!-- MENU D'ACCUEIL -->
+    <div id="menu" class="menu-card text-center">
+        <h1 class="text-3xl sm:text-4xl text-blue-600 mb-1">English</h1>
+        <h1 class="text-5xl sm:text-6xl text-red-500 mb-6">BINGO!</h1>
+        
+        <div class="space-y-3 sm:space-y-4">
+            <button onclick="startGame('colors')" class="btn-fancy w-full bg-blue-500 hover:bg-blue-600 text-white font-bold py-4 px-6 rounded-2xl text-lg shadow-[0_4px_0_#1e40af]">
+                🎨 Colors
+            </button>
+            <button onclick="startGame('body')" class="btn-fancy w-full bg-green-500 hover:bg-green-600 text-white font-bold py-4 px-6 rounded-2xl text-lg shadow-[0_4px_0_#166534]">
+                👤 Body parts
+            </button>
+            <button onclick="startGame('mixed')" class="btn-fancy w-full bg-purple-500 hover:bg-purple-600 text-white font-bold py-4 px-6 rounded-2xl text-lg shadow-[0_4px_0_#6b21a8]">
+                🌟 Mixed
+            </button>
         </div>
     </div>
 
-    <!-- Écran de fin -->
-    <div id="end-screen" class="hidden glass-card p-10 text-center max-w-md w-full">
-        <div id="trophy" class="text-8xl mb-4">🎈</div>
-        <h2 class="text-4xl font-bold mb-2 text-gray-800" id="end-title">Bravo !</h2>
-        <p id="final-result" class="text-3xl font-bold text-indigo-600 mb-6">Tu as 0 étoile !</p>
-        <div id="rank-message" class="mb-8 p-5 bg-yellow-50 rounded-2xl text-indigo-800 font-semibold text-xl border border-yellow-100"></div>
-        <button onclick="location.reload()" class="bg-indigo-600 text-white font-bold py-4 px-10 rounded-2xl w-full text-2xl shadow-lg transition-all hover:bg-indigo-700">
-            REFAIRE LE JEU
-        </button>
+    <!-- CONTENEUR DU JEU -->
+    <div id="game-container" class="hidden w-full max-w-md h-full flex flex-col justify-between py-4 px-2 z-10">
+        
+        <!-- HEADER -->
+        <div class="flex justify-between items-center shrink-0">
+            <button onclick="backToMenu()" class="bg-white px-3 py-1 rounded-full font-bold text-blue-500 border-2 border-blue-500 text-sm">
+                🏠 Menu
+            </button>
+            <div id="score" class="bg-yellow-400 px-4 py-1 rounded-full font-bold text-yellow-900 border-2 border-white shadow-md text-lg">
+                ⭐ 0 / 8
+            </div>
+        </div>
+
+        <!-- ZONE AUDIO / CONTRÔLES -->
+        <div class="bg-white p-4 rounded-3xl shadow-lg w-full border-2 border-blue-100 flex flex-col items-center gap-2 shrink-0">
+            <div class="flex items-center gap-4">
+                <button onclick="playCurrentWord()" class="btn-fancy bg-orange-400 hover:bg-orange-500 text-white w-14 h-14 rounded-full text-2xl shadow-[0_4px_0_#c2410c] flex items-center justify-center">
+                    🔊
+                </button>
+                <button id="next-btn" onclick="handleNextClick()" class="btn-fancy bg-blue-500 hover:bg-blue-600 text-white px-6 py-3 rounded-2xl font-black text-xl shadow-[0_4px_0_#1e40af]">
+                    Next ➡
+                </button>
+            </div>
+            <div id="status-msg" class="text-sm sm:text-base flex items-center text-center text-blue-700 font-bold italic h-6">
+                Écoute bien le mot...
+            </div>
+        </div>
+
+        <!-- LE CARTON DE BINGO -->
+        <div class="bingo-ticket shrink-0">
+            <div id="bingo-grid" class="bingo-grid"></div>
+        </div>
+
+        <!-- BOUTON REJOUER (FIN) -->
+        <div id="win-message" class="hidden text-center shrink-0 mb-2">
+            <button onclick="backToMenu()" class="btn-fancy bg-green-500 hover:bg-green-600 text-white font-black py-3 px-8 rounded-2xl text-xl shadow-[0_4px_0_#166534]">
+                REJOUER !
+            </button>
+        </div>
+        
+        <div class="h-1 shrink-0"></div>
     </div>
 
     <script>
-        // Vocabulaire des 11 couleurs demandées
-        const colorData = [
-            { name: "Purple", hex: "#8B5CF6" },  // Violet
-            { name: "Blue", hex: "#3B82F6" },    // Bleu
-            { name: "Green", hex: "#10B981" },   // Vert
-            { name: "Yellow", hex: "#FBBF24" },  // Jaune
-            { name: "Orange", hex: "#F97316" },  // Orange
-            { name: "Red", hex: "#EF4444" },     // Rouge
-            { name: "Black", hex: "#1F2937" },   // Noir
-            { name: "White", hex: "#FFFFFF" },   // Blanc
-            { name: "Brown", hex: "#78350F" },   // Marron
-            { name: "Gray", hex: "#9CA3AF" },    // Gris
-            { name: "Pink", hex: "#EC4899" }     // Rose
-        ];
+        const VOCABULARY = {
+            colors: [
+                { id: 'blue', term: 'blue', type: 'color', value: '#3b82f6' },
+                { id: 'red', term: 'red', type: 'color', value: '#ef4444' },
+                { id: 'yellow', term: 'yellow', type: 'color', value: '#facc15' }, // Jaune plus vif et distinct de l'orange
+                { id: 'black', term: 'black', type: 'color', value: '#000000' },
+                { id: 'brown', term: 'brown', type: 'color', value: '#78350f' },
+                { id: 'white', term: 'white', type: 'color', value: '#ffffff' },
+                { id: 'purple', term: 'purple', type: 'color', value: '#a855f7' },
+                { id: 'green', term: 'green', type: 'color', value: '#22c55e' },
+                { id: 'grey', term: 'grey', type: 'color', value: '#94a3b8' },
+                { id: 'orange', term: 'orange', type: 'color', value: '#f97316' },
+                { id: 'pink', term: 'pink', type: 'color', value: '#ec4899' }
+            ],
+            body: [
+                { id: 'nose', term: 'nose', type: 'body', emoji: '👃' },
+                { id: 'shoulders', term: 'shoulders', type: 'body', isSVG: true, svgType: 'shoulders' },
+                { id: 'hair', term: 'hair', type: 'body', emoji: '💇' },
+                { id: 'knees', term: 'knees', type: 'body', isSVG: true, svgType: 'knees' },
+                { id: 'ears', term: 'ears', type: 'body', emoji: '👂' },
+                { id: 'eyes', term: 'eyes', type: 'body', emoji: '👀' },
+                { id: 'mouth', term: 'mouth', type: 'body', emoji: '👄' },
+                { id: 'toes', term: 'toes', type: 'body', emoji: '👣' },
+                { id: 'teeth', term: 'teeth', type: 'body', emoji: '🦷' },
+                { id: 'big', term: 'big', type: 'body', emoji: '🐘' },
+                { id: 'small', term: 'small', type: 'body', emoji: '🐭' }
+            ]
+        };
 
-        let score = 0;
-        let currentQuestion = 0;
-        let targetColor = null;
-        let previousColorName = null;
-        let isListening = false;
-        const totalQuestions = 12;
+        const canvas = document.getElementById('bg-canvas');
+        const ctx = canvas.getContext('2d');
+        let icons = [];
+        const emojiPool = ['🎨', '👃', '✋', '👀', '🔴', '🔵', '👂', '🟢', '🐘', '🦷', '🦵', '👄', '👣'];
 
-        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-        let recognition = null;
-
-        if (SpeechRecognition) {
-            recognition = new SpeechRecognition();
-            recognition.lang = 'en-US';
-            recognition.interimResults = false;
-
-            recognition.onresult = (event) => {
-                const speechResult = event.results[0][0].transcript.toLowerCase().trim();
-                handleVoiceInput(speechResult);
-            };
-
-            recognition.onspeechend = () => stopMicUI();
-            recognition.onnomatch = () => handleVoiceInput("");
-            recognition.onerror = (event) => {
-                stopMicUI();
-                if (isListening) handleVoiceInput("");
-            };
+        function initCanvas() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+            icons = [];
+            for(let i=0; i<8; i++) {
+                icons.push({
+                    x: Math.random() * canvas.width,
+                    y: Math.random() * canvas.height,
+                    dx: (Math.random() - 0.5) * 1.5,
+                    dy: (Math.random() - 0.5) * 1.5,
+                    text: emojiPool[Math.floor(Math.random() * emojiPool.length)],
+                    size: 20 + Math.random() * 15
+                });
+            }
         }
 
-        function speakWord(text) {
-            // Annule toute lecture en cours pour éviter les superpositions
-            window.speechSynthesis.cancel();
+        function drawBackground() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            ctx.globalAlpha = 0.1;
+            icons.forEach(icon => {
+                ctx.font = `${icon.size}px Arial`;
+                ctx.fillText(icon.text, icon.x, icon.y);
+                icon.x += icon.dx;
+                icon.y += icon.dy;
+                if(icon.x < 0 || icon.x > canvas.width - icon.size) icon.dx *= -1;
+                if(icon.y < icon.size || icon.y > canvas.height) icon.dy *= -1;
+            });
+            requestAnimationFrame(drawBackground);
+        }
+
+        window.addEventListener('resize', initCanvas);
+        initCanvas();
+        drawBackground();
+
+        let currentPool = []; 
+        let currentCardItems = [];
+        let currentAudioWord = '';
+        let foundItems = new Set();
+        let synthInitialized = false;
+
+        function initSynth() {
+            if (synthInitialized) return;
+            const silent = new SpeechSynthesisUtterance("");
+            window.speechSynthesis.speak(silent);
+            synthInitialized = true;
+        }
+
+        function startGame(mode) {
+            initSynth();
+            document.getElementById('menu').classList.add('hidden');
+            document.getElementById('game-container').classList.remove('hidden');
+            document.getElementById('win-message').classList.add('hidden');
+            document.getElementById('next-btn').disabled = false;
+            foundItems.clear();
             
-            const utterance = new SpeechSynthesisUtterance(text);
-            utterance.lang = 'en-US';
-            utterance.rate = 0.85; 
-            window.speechSynthesis.speak(utterance);
+            let basePool = [];
+            if (mode === 'colors') basePool = [...VOCABULARY.colors];
+            else if (mode === 'body') basePool = [...VOCABULARY.body];
+            else basePool = [...VOCABULARY.colors, ...VOCABULARY.body];
+
+            currentPool = [...basePool].sort(() => 0.5 - Math.random());
+            currentCardItems = [...basePool].sort(() => 0.5 - Math.random()).slice(0, 8);
+
+            generateCard();
+            nextWord();
+            updateScoreDisplay();
         }
 
-        function startGame() {
-            document.getElementById('start-screen').classList.add('hidden');
-            document.getElementById('game-screen').classList.remove('hidden');
-            nextQuestion();
+        function generateCard() {
+            const grid = document.getElementById('bingo-grid');
+            grid.innerHTML = '';
+            
+            currentCardItems.forEach(item => {
+                const cell = document.createElement('div');
+                cell.className = 'bingo-cell';
+                cell.onclick = () => checkItem(item, cell);
+
+                if (item.type === 'color') {
+                    const circle = document.createElement('div');
+                    circle.style.backgroundColor = item.value;
+                    circle.className = 'w-2/3 h-2/3 rounded-full border-2 border-white shadow-sm';
+                    cell.appendChild(circle);
+                } else if (item.isSVG) {
+                    const iconSize = "w-full h-full p-2";
+                    if (item.svgType === 'shoulders') {
+                        cell.innerHTML = `
+                            <div class="relative ${iconSize} flex items-center justify-center">
+                                <span class="text-3xl sm:text-4xl">🤷</span>
+                                <svg class="absolute inset-0" viewBox="0 0 100 100">
+                                    <defs>
+                                        <marker id="arrowhead-s" markerWidth="10" markerHeight="10" refX="0" refY="3" orient="auto">
+                                            <polygon points="0 0, 6 3, 0 6" fill="red" />
+                                        </marker>
+                                    </defs>
+                                    <line x1="15" y1="15" x2="30" y2="35" stroke="red" stroke-width="4" marker-end="url(#arrowhead-s)" />
+                                    <line x1="85" y1="15" x2="70" y2="35" stroke="red" stroke-width="4" marker-end="url(#arrowhead-s)" />
+                                </svg>
+                            </div>`;
+                    } else if (item.svgType === 'knees') {
+                        cell.innerHTML = `
+                            <div class="relative ${iconSize} flex items-center justify-center">
+                                <span class="text-3xl sm:text-4xl">🦵</span>
+                                <svg class="absolute inset-0" viewBox="0 0 100 100">
+                                    <defs>
+                                        <marker id="arrowhead-k" markerWidth="10" markerHeight="10" refX="0" refY="3" orient="auto">
+                                            <polygon points="0 0, 6 3, 0 6" fill="red" />
+                                        </marker>
+                                    </defs>
+                                    <line x1="80" y1="20" x2="55" y2="45" stroke="red" stroke-width="4" marker-end="url(#arrowhead-k)" />
+                                </svg>
+                            </div>`;
+                    }
+                } else {
+                    cell.innerHTML = `<div class="flex flex-col items-center">
+                        <span class="text-3xl sm:text-4xl">${item.emoji}</span>
+                        ${(item.id === 'big' || item.id === 'small') ? `<span class="text-[8px] font-bold uppercase text-gray-300 leading-none">${item.id}</span>` : ''}
+                    </div>`;
+                }
+                grid.appendChild(cell);
+            });
         }
 
-        function nextQuestion() {
-            if (currentQuestion >= totalQuestions) {
-                showEndScreen();
+        function nextWord() {
+            if (currentPool.length === 0) {
+                document.getElementById('status-msg').innerText = "Plus de mots !";
+                document.getElementById('next-btn').disabled = true;
                 return;
             }
 
-            currentQuestion++;
-            document.getElementById('question-count').innerText = currentQuestion;
-            document.getElementById('status-label').innerText = "C'est quelle couleur ?";
-            document.getElementById('status-label').className = "text-indigo-900 font-bold text-2xl h-8 mb-2";
-            document.getElementById('heard-bubble').classList.add('hidden');
-            document.getElementById('mic-btn').disabled = false;
+            const drawnItem = currentPool.shift();
+            currentAudioWord = drawnItem.term;
             
-            // Logique anti-répétition
-            let newTargetColor;
-            do {
-                newTargetColor = colorData[Math.floor(Math.random() * colorData.length)];
-            } while (newTargetColor.name === previousColorName);
-            
-            targetColor = newTargetColor;
-            previousColorName = targetColor.name;
-            
-            const disk = document.getElementById('color-target');
-            disk.style.backgroundColor = targetColor.hex;
-            disk.style.borderColor = (targetColor.name === "White") ? "#e2e8f0" : "white";
-            disk.style.transform = "scale(1)";
+            playCurrentWord();
+            const status = document.getElementById('status-msg');
+            status.innerText = "Écoute bien le mot...";
+            status.classList.remove('warning-shake', 'text-red-500');
+            status.classList.add('text-blue-700');
         }
 
-        function startListening() {
-            if (!recognition || isListening) return;
-            try {
-                recognition.start();
-                isListening = true;
-                document.getElementById('mic-btn').classList.add('active');
-                document.getElementById('status-label').innerText = "Je t'écoute...";
-            } catch (e) { console.error(e); }
-        }
-
-        function stopMicUI() {
-            isListening = false;
-            document.getElementById('mic-btn').classList.remove('active');
-        }
-
-        function handleVoiceInput(result) {
-            const micBtn = document.getElementById('mic-btn');
-            const statusLabel = document.getElementById('status-label');
-            const heardBubble = document.getElementById('heard-bubble');
+        function playCurrentWord() {
+            if (!window.speechSynthesis) return;
+            window.speechSynthesis.cancel();
             
-            if (micBtn.disabled) return; 
+            const utterance = new SpeechSynthesisUtterance(currentAudioWord);
+            utterance.lang = 'en-US';
+            utterance.rate = 0.7;
+            
+            setTimeout(() => {
+                window.speechSynthesis.speak(utterance);
+            }, 50);
+        }
 
-            micBtn.disabled = true;
-            heardBubble.innerText = result ? `J'ai entendu : "${result}"` : "Je n'ai pas bien entendu...";
-            heardBubble.classList.remove('hidden');
+        function handleNextClick() {
+            const isOnCard = currentCardItems.some(item => item.term === currentAudioWord);
+            const isFound = Array.from(foundItems).some(id => {
+                const allVocab = [...VOCABULARY.colors, ...VOCABULARY.body];
+                const item = allVocab.find(p => p.id === id);
+                return item && item.term === currentAudioWord;
+            });
 
-            const isCorrect = result.toLowerCase().includes(targetColor.name.toLowerCase());
-
-            if (isCorrect) {
-                score++;
-                document.getElementById('score').innerText = score;
-                statusLabel.innerText = "C'est ça ! Super ! ✅";
-                statusLabel.classList.add('text-green-600');
-                
-                confetti({
-                    particleCount: 100,
-                    spread: 70,
-                    origin: { y: 0.6 },
-                    colors: [targetColor.hex, '#ffffff']
-                });
-
-                // Succès : Great job + Nom de la couleur
-                setTimeout(() => {
-                    speakWord(`Great job! ${targetColor.name}`);
-                    setTimeout(nextQuestion, 2500); // Un peu plus long pour laisser le temps de parler
-                }, 200);
-
+            if (isOnCard && !isFound) {
+                const status = document.getElementById('status-msg');
+                status.innerText = "C'est sur ton carton !";
+                status.classList.add('warning-shake', 'text-red-500');
+                playCurrentWord();
+                setTimeout(() => status.classList.remove('warning-shake'), 500);
             } else {
-                statusLabel.innerText = "Écoute bien... 👂";
-                statusLabel.classList.add('text-red-500');
-                
-                // Erreur : Juste le nom de la couleur pour corriger
-                setTimeout(() => {
-                    speakWord(targetColor.name); 
-                    setTimeout(nextQuestion, 2500);
-                }, 500);
+                nextWord();
             }
         }
 
-        function showEndScreen() {
-            document.getElementById('game-screen').classList.add('hidden');
-            document.getElementById('end-screen').classList.remove('hidden');
-            document.getElementById('final-result').innerText = `Tu as gagné ${score} étoile(s) !`;
-            
-            let rank = "";
-            let trophy = "🎈";
-            let title = "Bravo !";
+        function checkItem(item, element) {
+            if (foundItems.has(item.id)) return;
 
-            if (score === 12) { 
-                title = "Champion ! 🏆";
-                rank = "C'est incroyable ! Tu connais parfaitement toutes les couleurs !"; 
-                trophy = "🥇"; 
+            if (item.term === currentAudioWord) {
+                foundItems.add(item.id);
+                const token = document.createElement('div');
+                token.className = 'token';
+                token.innerHTML = '⭐';
+                element.appendChild(token);
+                updateScoreDisplay();
+                
+                if (foundItems.size === 8) endGame();
+                else {
+                    document.getElementById('status-msg').innerText = "Bravo ! Suivant...";
+                    setTimeout(nextWord, 1000);
+                }
+            } else {
+                element.classList.add('border-red-500');
+                setTimeout(() => element.classList.remove('border-red-500'), 500);
+                const utterance = new SpeechSynthesisUtterance("Try again!");
+                utterance.lang = 'en-US';
+                window.speechSynthesis.speak(utterance);
             }
-            else if (score >= 9) { 
-                title = "Super ! 🌟";
-                rank = "Beau travail ! Tu te débrouilles très bien en anglais !"; 
-                trophy = "🥈"; 
-            }
-            else if (score >= 6) { 
-                title = "Bien ! 👍";
-                rank = "C'est un bon début, continue de t'entraîner !"; 
-                trophy = "🥉"; 
-            }
-            else { 
-                title = "Courage ! 💪";
-                rank = "Rejoue encore pour apprendre toutes les couleurs !"; 
-                trophy = "🎈"; 
-            }
-            
-            document.getElementById('end-title').innerText = title;
-            document.getElementById('rank-message').innerText = rank;
-            document.getElementById('trophy').innerText = trophy;
+        }
 
-            if (score >= 9) {
-                confetti({ particleCount: 150, spread: 100, origin: { y: 0.5 } });
+        function updateScoreDisplay() {
+            document.getElementById('score').innerText = `⭐ ${foundItems.size} / 8`;
+        }
+
+        function endGame() {
+            document.getElementById('win-message').classList.remove('hidden');
+            document.getElementById('status-msg').innerText = "BINGO ! WELL DONE !";
+            confetti({ particleCount: 100, spread: 60, origin: { y: 0.8 } });
+            const utterance = new SpeechSynthesisUtterance("Bingo! Well done!");
+            utterance.lang = 'en-US';
+            window.speechSynthesis.speak(utterance);
+        }
+
+        function backToMenu() {
+            document.getElementById('menu').classList.remove('hidden');
+            document.getElementById('game-container').classList.add('hidden');
+            window.speechSynthesis.cancel();
+        }
+
+        if (window.speechSynthesis) {
+            window.speechSynthesis.getVoices();
+            if (speechSynthesis.onvoiceschanged !== undefined) {
+                speechSynthesis.onvoiceschanged = () => window.speechSynthesis.getVoices();
             }
         }
     </script>
