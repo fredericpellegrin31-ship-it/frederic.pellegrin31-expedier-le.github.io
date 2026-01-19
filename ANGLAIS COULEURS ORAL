@@ -1,0 +1,385 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Rainbow Bounce - Learn English Colors</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Fredoka+One&family=Quicksand:wght@500;700&display=swap');
+
+        body {
+            font-family: 'Quicksand', sans-serif;
+            overflow: hidden; 
+            background-color: #f0f9ff;
+            user-select: none;
+            touch-action: manipulation;
+            margin: 0;
+            height: 100vh;
+            width: 100vw;
+        }
+
+        .title-font {
+            font-family: 'Fredoka+One', cursive;
+        }
+
+        .ball {
+            position: absolute;
+            border-radius: 50%;
+            cursor: pointer;
+            transition: transform 0.1s;
+            box-shadow: inset -10px -10px 15px rgba(0,0,0,0.2), 0 5px 15px rgba(0,0,0,0.1);
+            touch-action: none;
+        }
+
+        .ball:active {
+            transform: scale(0.8);
+        }
+
+        .btn-bounce {
+            transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+
+        .btn-bounce:hover {
+            transform: scale(1.1);
+        }
+
+        .screen {
+            display: none;
+            height: 100%;
+            width: 100%;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            position: absolute;
+            top: 0;
+            left: 0;
+        }
+
+        .active-screen {
+            display: flex;
+        }
+
+        .color-bubble {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            transition: all 0.2s;
+        }
+
+        @media (min-width: 768px) {
+            .color-bubble { width: 120px; height: 120px; }
+        }
+
+        .color-bubble:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 15px rgba(0,0,0,0.15);
+        }
+
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-10px); }
+            75% { transform: translateX(10px); }
+        }
+        .animate-shake { animation: shake 0.2s ease-in-out 0s 2; }
+
+        .trophy-bounce {
+            animation: bounce 2s infinite;
+        }
+
+        @keyframes bounce {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-20px); }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Ecran d'accueil -->
+    <div id="screen-home" class="screen active-screen bg-gradient-to-br from-blue-400 to-purple-500 text-white p-4 text-center">
+        <h1 class="title-font text-5xl md:text-7xl mb-12 drop-shadow-lg">Rainbow Bounce</h1>
+        <div class="flex flex-col md:flex-row gap-6">
+            <button onclick="initSpeech(); showScreen('screen-learn')" class="btn-bounce bg-yellow-400 hover:bg-yellow-300 text-blue-900 px-10 py-5 rounded-full text-2xl font-bold shadow-xl">LEARN</button>
+            <button onclick="initSpeech(); startGame()" class="btn-bounce bg-green-500 hover:bg-green-400 text-white px-10 py-5 rounded-full text-2xl font-bold shadow-xl">PLAY</button>
+        </div>
+    </div>
+
+    <!-- Ecran d'apprentissage -->
+    <div id="screen-learn" class="screen bg-white overflow-y-auto">
+        <button onclick="showScreen('screen-home')" class="absolute top-4 left-4 z-50 bg-gray-200 p-3 rounded-full hover:bg-gray-300 transition-colors">
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+        </button>
+        <h2 class="title-font text-3xl text-blue-600 my-8 text-center px-4">Listen to the colors!</h2>
+        <div id="learn-grid" class="grid grid-cols-3 md:grid-cols-5 lg:grid-cols-6 gap-6 p-4 max-w-5xl mx-auto">
+            <!-- Injecté par JS -->
+        </div>
+    </div>
+
+    <!-- Ecran de Jeu -->
+    <div id="screen-game" class="screen bg-blue-50 overflow-hidden">
+        <div class="absolute top-4 left-4 right-4 flex justify-between items-center z-50">
+            <button onclick="stopGame()" class="bg-white/90 backdrop-blur p-2 rounded-full shadow-md">
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+            </button>
+            <div class="bg-white/90 backdrop-blur px-4 py-1 rounded-full shadow-md text-sm md:text-lg font-bold text-blue-600">
+                <span id="current-question">1</span> / 12
+            </div>
+            <button onclick="repeatColor()" class="bg-yellow-400 p-2 rounded-full shadow-md animate-pulse">
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 5L6 9H2v6h4l5 4V5z"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/></svg>
+            </button>
+        </div>
+        
+        <div id="game-area" class="w-full h-full relative"></div>
+    </div>
+
+    <!-- Ecran de Fin (Fond Blanc pour mieux voir les confettis) -->
+    <div id="screen-result" class="screen bg-white text-blue-600 p-4 text-center">
+        <div class="mb-6 trophy-bounce">
+            <svg xmlns="http://www.w3.org/2000/svg" width="120" height="120" viewBox="0 0 24 24" fill="none" stroke="#fbbf24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/><path d="M4 22h16"/><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"/><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"/><path d="M18 2H6v7a6 6 0 0 0 12 0V2Z"/></svg>
+        </div>
+        <h2 class="title-font text-5xl mb-6 text-purple-600">Excellent!</h2>
+        <p class="text-2xl mb-10 text-gray-700 font-bold">You are a Color Champion!</p>
+        <button onclick="showScreen('screen-home')" class="btn-bounce bg-purple-600 text-white px-10 py-4 rounded-full text-xl font-bold shadow-2xl">Try Again</button>
+    </div>
+
+    <script>
+        const COLORS = [
+            { name: 'Red', hex: '#ef4444' },
+            { name: 'Blue', hex: '#3b82f6' },
+            { name: 'Green', hex: '#22c55e' },
+            { name: 'Yellow', hex: '#eab308' },
+            { name: 'Orange', hex: '#f97316' },
+            { name: 'Purple', hex: '#a855f7' },
+            { name: 'Pink', hex: '#ec4899' },
+            { name: 'Brown', hex: '#78350f' },
+            { name: 'Grey', hex: '#94a3b8' },
+            { name: 'Black', hex: '#000000' },
+            { name: 'White', hex: '#ffffff' }
+        ];
+
+        let currentQuestion = 1;
+        let targetColor = null;
+        let lastTargetColor = null;
+        let balls = [];
+        let animationFrame;
+        const totalQuestions = 12;
+
+        let viewWidth = window.innerWidth;
+        let viewHeight = window.innerHeight;
+
+        window.addEventListener('resize', () => {
+            viewWidth = window.innerWidth;
+            viewHeight = window.innerHeight;
+        });
+
+        // Initialisation de la voix (nécessaire pour Netlify/Autoplay)
+        let voicesLoaded = false;
+        function initSpeech() {
+            if (!voicesLoaded) {
+                const utterance = new SpeechSynthesisUtterance("");
+                window.speechSynthesis.speak(utterance);
+                voicesLoaded = true;
+            }
+        }
+
+        function speak(text) {
+            window.speechSynthesis.cancel();
+            
+            const utterance = new SpeechSynthesisUtterance(text);
+            utterance.lang = 'en-US';
+            utterance.rate = 0.85;
+
+            const voices = window.speechSynthesis.getVoices();
+            const enVoice = voices.find(v => v.lang.includes('en-US') || v.lang.includes('en_US'));
+            if (enVoice) utterance.voice = enVoice;
+
+            window.speechSynthesis.speak(utterance);
+        }
+
+        window.speechSynthesis.onvoiceschanged = () => {
+            window.speechSynthesis.getVoices();
+        };
+
+        function showScreen(screenId) {
+            document.querySelectorAll('.screen').forEach(s => s.classList.remove('active-screen'));
+            document.getElementById(screenId).classList.add('active-screen');
+            if(screenId !== 'screen-game') {
+                cancelAnimationFrame(animationFrame);
+            }
+            if(screenId === 'screen-result') {
+                launchConfetti();
+            }
+        }
+
+        function launchConfetti() {
+            const duration = 4 * 1000;
+            const end = Date.now() + duration;
+
+            (function frame() {
+                confetti({
+                    particleCount: 4,
+                    angle: 60,
+                    spread: 55,
+                    origin: { x: 0 },
+                    colors: ['#ef4444', '#3b82f6', '#22c55e', '#eab308']
+                });
+                confetti({
+                    particleCount: 4,
+                    angle: 120,
+                    spread: 55,
+                    origin: { x: 1 },
+                    colors: ['#f97316', '#a855f7', '#ec4899', '#ff0000']
+                });
+
+                if (Date.now() < end) {
+                    requestAnimationFrame(frame);
+                }
+            }());
+        }
+
+        const learnGrid = document.getElementById('learn-grid');
+        COLORS.forEach(color => {
+            const div = document.createElement('div');
+            div.className = 'flex flex-col items-center justify-center p-2';
+            div.innerHTML = `
+                <div class="color-bubble" style="background-color: ${color.hex}; border: ${color.name === 'White' ? '2px solid #ddd' : 'none'}" onclick="speak('${color.name}')"></div>
+            `;
+            learnGrid.appendChild(div);
+        });
+
+        function startGame() {
+            currentQuestion = 1;
+            lastTargetColor = null;
+            showScreen('screen-game');
+            nextQuestion();
+        }
+
+        function stopGame() {
+            cancelAnimationFrame(animationFrame);
+            showScreen('screen-home');
+        }
+
+        function repeatColor() {
+            if(targetColor) speak(targetColor.name);
+        }
+
+        function nextQuestion() {
+            if (currentQuestion > totalQuestions) {
+                showScreen('screen-result');
+                speak("Excellent! You are a Champion!");
+                return;
+            }
+
+            document.getElementById('current-question').innerText = currentQuestion;
+            const gameArea = document.getElementById('game-area');
+            gameArea.innerHTML = '';
+            balls = [];
+
+            let newTarget;
+            do {
+                newTarget = COLORS[Math.floor(Math.random() * COLORS.length)];
+            } while (newTarget === lastTargetColor);
+            
+            targetColor = newTarget;
+            lastTargetColor = targetColor;
+
+            const numBalls = Math.floor(Math.random() * 3) + 4;
+            let availableColors = COLORS.filter(c => c.name !== targetColor.name);
+            availableColors.sort(() => Math.random() - 0.5);
+            
+            let colorChoices = [targetColor];
+            for(let i = 0; i < numBalls - 1; i++) {
+                colorChoices.push(availableColors[i]);
+            }
+            colorChoices.sort(() => Math.random() - 0.5);
+
+            // Vitesse réduite pour Cycle 2
+            // Progression jusqu'à la question 7, puis plafonnée
+            const speedLevel = Math.min(currentQuestion, 7);
+            const baseSpeed = 0.5 + (speedLevel * 0.05); 
+
+            colorChoices.forEach((color) => {
+                const ballEl = document.createElement('div');
+                ballEl.className = 'ball';
+                const size = viewWidth < 600 ? 60 + Math.random() * 20 : 80 + Math.random() * 40;
+                ballEl.style.width = `${size}px`;
+                ballEl.style.height = `${size}px`;
+                ballEl.style.backgroundColor = color.hex;
+                if(color.name === 'White') ballEl.style.border = '1px solid #ccc';
+                
+                gameArea.appendChild(ballEl);
+
+                const angle = Math.random() * Math.PI * 2;
+                const ballObj = {
+                    el: ballEl,
+                    x: Math.random() * (viewWidth - size),
+                    y: Math.random() * (viewHeight - size),
+                    dx: Math.cos(angle) * baseSpeed,
+                    dy: Math.sin(angle) * baseSpeed,
+                    size: size,
+                    colorName: color.name
+                };
+
+                ballEl.addEventListener('pointerdown', (e) => {
+                    e.preventDefault();
+                    handleBallClick(ballObj);
+                });
+                balls.push(ballObj);
+            });
+
+            speak(targetColor.name);
+            animate();
+        }
+
+        function handleBallClick(ball) {
+            if (ball.colorName === targetColor.name) {
+                ball.el.style.transform = 'scale(1.5)';
+                ball.el.style.opacity = '0';
+                ball.el.style.pointerEvents = 'none';
+                speak("Great!");
+                setTimeout(() => {
+                    currentQuestion++;
+                    nextQuestion();
+                }, 800);
+            } else {
+                speak("No, that is " + ball.colorName);
+                ball.el.classList.add('animate-shake');
+                setTimeout(() => ball.el.classList.remove('animate-shake'), 500);
+            }
+        }
+
+        function animate() {
+            balls.forEach(ball => {
+                ball.x += ball.dx;
+                ball.y += ball.dy;
+
+                if (ball.x <= 0) {
+                    ball.x = 0;
+                    ball.dx *= -1;
+                } else if (ball.x + ball.size >= viewWidth) {
+                    ball.x = viewWidth - ball.size;
+                    ball.dx *= -1;
+                }
+
+                if (ball.y <= 0) {
+                    ball.y = 0;
+                    ball.dy *= -1;
+                } else if (ball.y + ball.size >= viewHeight) {
+                    ball.y = viewHeight - ball.size;
+                    ball.dy *= -1;
+                }
+
+                ball.el.style.left = ball.x + 'px';
+                ball.el.style.top = ball.y + 'px';
+            });
+            animationFrame = requestAnimationFrame(animate);
+        }
+    </script>
+</body>
+</html>
